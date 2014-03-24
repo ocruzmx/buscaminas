@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>BUSCAMINAS</title>
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<link rel="stylesheet" href="css/bootstrap-theme.min.css">
+	<script src="js/jquery-2.1.0.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+</head>
+<body>
+	<div class="container">
+		<h1>Buscaminas</h1>
+		<div class="row">
+			<form action="#" role="form">
+				<div class="form-group">
+					<label for="bus_ancho">Ancho:</label>
+					<input type="text" name="bus_ancho" id="bus_ancho" placeholder="ANCHO">
+					<label for="bus_alto">Alto:</label>
+					<input type="text" name="bus_alto" id="bus_alto" placeholder="ALTO">
+					<label for="bus_minas">Minas:</label>
+					<input type="text" name="bus_minas" id="bus_minas" placeholder="MINAS">
+					<button type="button" id="iniciar" class="btn btn-primary">INICIAR</button>
+					<button type="button" id="reiniciar" class="btn btn-warning" onclick="LimpiaTodo()">REINICIAR</button>
+				</div>
+				<div class="form-group">
+					<div class="box1">
+						<label class="textI">Movimientos realizados:</label>
+						<span class="mmovs"></span>
+					</div>
+					<div class="box2">
+						<label class="textI">Piezas restantes:</label>
+						<span class="mins"></span>
+					</div>
+				</div>
+			</form>
+		</div>
+		<div class="tablero">
+			
+		</div>
+	</div>
+	
+
+	<div class="modal fade" id="myModal">
+	  <div class="modal-dialog">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <h4 class="modal-title"></h4>
+	      </div>
+	      <div class="modal-body">
+	        <p></p>
+	      </div>
+	      <div class="modal-footer">
+	        <!--<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>-->
+	        <a href="" class="btn btn-primary" data-dismiss="modal">Aceptar</a>
+	      </div>
+	    </div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+	
+<style>
+	.tapa{
+		background: #404040 !important;
+		color: #404040 !important;
+	}
+
+	.numero{
+		color:#006600;
+	}
+
+
+
+	.box1 {
+	    background: none repeat scroll 0 0 #66CC33;
+	    color: #FFFFFF;
+	    display: inline;
+	    margin: auto;
+	    padding: 5px;
+	    width: 250px;
+	}
+	.box2 {
+	    background: #FF6633;
+	    color: #FFFFFF;
+	    display: inline;
+	    margin: auto;
+	    padding: 5px 30px;
+	    width: 250px;
+	}
+
+	.mmovs{
+		color: #003300;
+	}
+
+	td div{
+		color: #DDD;
+		border:2px solid #FFF;
+		cursor: pointer;
+	}
+
+	div.tablero table{
+		margin: auto;
+	}
+	form, h1{
+		text-align: center;
+	}
+
+	.B1{
+		background: url('http://icons.iconarchive.com/icons/led24.de/led/16/bomb-icon.png') no-repeat 5px 5px #FF0000;
+		background-size:16px 16px;
+		content: '';
+	}
+
+	.Flag{
+		background: url('http://icons.iconarchive.com/icons/icons-land/vista-flags/256/Solid-Color-White-Flag-3-icon.png') no-repeat 5px 5px #00CC00;
+		background-size:16px 16px;
+		content: '';
+	}
+</style>
+<script>
+//<div id = '' class = '' value=''></div>
+Movimientos = 0;
+Restantes = 0;
+
+
+$(function(){
+	$('input#bus_alto').keypress(function(e){if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)){return false;}});
+	$('input#bus_ancho').keypress(function(e){if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)){return false;}});
+	$('input#bus_minas').keypress(function(e){if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)){return false;}});
+	$('body').on('contextmenu', '.tablero', function(e){ return false; });
+	
+
+	$('button#iniciar').click(function(){
+		//alert("Algo");
+		alto = $('input#bus_alto').val();
+		ancho = $('input#bus_ancho').val();
+		minas = $('input#bus_minas').val();
+		if((alto != '') && (alto != 0) || (ancho != '') && (ancho != 0)|| (minas != '') && (minas != 0)){
+			Cargados = CreateArray(alto, ancho, minas);
+			console.log(Cargados);
+			if (Cargados != false) {
+				Imprimir( Cargados , alto, ancho );
+			}
+			
+		}else{
+			console.log("Display modal");
+			title = "Ooopppsss";
+			text = "Por favor verifique que el valor de las casillas sea diferente de 0 y que el numero de minas sea correcto";
+			showModal(title, text);
+		}
+	});
+
+	
+
+})
+
+function showModal(title, text, href=""){
+	$('h4.modal-title').html(title);
+	$('div.modal-body p').html(text);
+	$('a.btn').attr('onclick',href);
+	$('#myModal').modal('show');
+}
+
+function CreateArray(alto, ancho, num){
+TotalCampos = alto * ancho;
+Totales = TotalCampos;
+if (TotalCampos < num) {
+	//alert("numero de minas no permitido");
+	title = "Verifique lo siguiente";
+	text = "El numero de minas no puede exceder el tamaño total del campo, por favor ingrese un numero menor a <b>" + TotalCampos + "</b>";
+	showModal(title, text);
+	return false;
+}else{
+	Blancas = TotalCampos - num;
+	Campos = new Array();
+	for (var i = 1; i <= TotalCampos; i++) {
+		Campo = new Array();
+		if (i <= Blancas) {
+			Campo[0] = i; //n
+			Campo[1] = 0; //B
+			Campo[2] = 0; //P
+			Campo[3] = 0; //R
+		}else{
+			Campo[0] = i; //n
+			Campo[1] = 1; //B
+			Campo[2] = 0; //P
+			Campo[3] = 0; //R
+		}
+		Campos.push(Campo);
+	};
+	//console.log("Array Ordenado");
+	//console.log(Campos);
+	Campos.sort(function() { return 0.5 - Math.random() });
+	Campos.sort(function() { return 0.5 - Math.random() });
+	Campos.sort(function() { return 0.5 - Math.random() });
+	Campos.sort(function() { return 0.5 - Math.random() });
+	Campos.sort(function() { return 0.5 - Math.random() });
+	
+	console.log("Array Desordenado");
+	console.log(Campos);
+	return Campos;
+}
+}
+
+
+
+
+
+function Imprimir( Cargados , alto, ancho ){
+	Cargados = DistanciaMina(Cargados , alto, ancho );
+	$('span.mins').html(Cargados.length);
+	var bomba ="";
+	html = "<table>";
+	var k = 0;       
+	for ( i=0 ;i < alto; i++ ){
+		html = html+"<tr>";
+	for( j=0; j < ancho; j++ ){
+		if((Cargados[k][1] == 1) || (Cargados[k][3] == 0)){
+			bomba = "";
+		}else{
+			bomba=Cargados[k][3];
+		}
+		html =  html + "<td><div id ='"+Cargados[k][0]+"' class ='B"+Cargados[k][1]+" numero tapa casilla' value='"+Cargados[k][3]+"' style=' padding:3px; text-align:center; width:30px; height:30px;'>"+ bomba +"</div></td>";
+		k++;
+		}
+		html= html+"</tr>";
+	}
+	html = html +"</table>";
+	$(".tablero").html(html);
+	$('div.casilla').mousedown(function(e){
+		switch(e.which){
+			case 1:
+				DestaparArray($(this))
+				break;
+			case 3:
+				addFlag($(this));
+				break;
+		}
+		
+	});
+}
+
+function DistanciaMina(Cargados , alto, ancho ){
+	//console.log(Cargados);
+	var k=0;
+	for(j = 0 ; j < alto ; j++){
+		for(i = 0 ; i < ancho ; i++){
+			l=k-1;
+			m=k+1;
+			if(i==0){
+				l=k;
+			}else if(i==(ancho-1)){
+				m=k;
+			}
+			//console.log(l);
+			if(Cargados[k][1]){	
+				//sumar value a la izquierda
+				Cargados[l][3]++;
+				//suma a la derecha
+				Cargados[m][3]++;
+				var up = 0;
+				var down = 0;
+				ancho = parseInt(ancho);
+				k = parseInt(k);
+				down = k+ancho;
+				up = k-ancho;
+				if(j==0){
+					console.log("up: ",up);
+					up=k;
+
+				}else if(j==(alto-1)){
+					console.log("down: ",down);
+					down=k;
+				}
+				// k es la posicion actual
+				//asignamos valor arriba de la bomba	
+				//arriba
+				Cargados[up][3]++;
+				var upd=up+1;
+				var upl=up-1;
+
+				if(upl<0){
+					upl=k;
+				}
+				if(up==k){
+					upl=k;
+					upd=k;	
+				}
+				if(i == (ancho-1)){
+					upd=k;
+					console.log("entres");
+		
+				}
+				if((i == 0)  || (ancho == i)){	upl = k; }
+				//arriba izq-der
+				Cargados[upd][3]++;
+				Cargados[upl][3]++;
+				
+				//asignamos valo abajo de la bomba
+				Cargados[down][3]++;
+				//abajo der-izq
+				var downd=k+ancho+1;
+				var downl=down-1;
+				if(downd >= Cargados.length){
+					if(Cargados[k][1] ==1){
+						downd=k;
+					}
+				}
+				if(down==k){
+					downl=k;
+					downd=k;	
+					
+				}
+				if(i==(ancho-1) || i == 0){
+					downl = k;
+				}
+				//arriba izq-der
+				Cargados[downd][3]++;
+				Cargados[downl][3]++;
+			}
+			k++;
+		}
+	}
+	k = 0;
+	for (i=0;i<alto;i++){
+		for(j=0;j<ancho;j++){
+			if(Cargados[k][1] == 1){
+				Cargados[k][3] = 'BooM'	;
+			}
+			k++;
+			
+		}
+	}
+	return Cargados;
+}
+
+
+
+
+function DestaparArray(div){
+	//funcion para destapar al arreglo
+	div.removeClass('tapa');
+	div.removeClass('Flag');
+	if(div.attr('value') == 'BooM'){
+		title = "X_X MUERTO";
+		text = "Jugar de nuevo?";
+		showModal(title, text, 'LimpiaTodo();');
+	}else if(div.attr('value') == 0){
+		$('div.casilla').each(function(i){
+			if(($(this).attr('value') == 0) || ($(this).attr('value') == 1)){
+				$(this).removeClass('tapa');
+				if(!$(this).hasClass('Flag')){
+					$(this).css('background', '#0066FF');
+				}
+			}
+		});
+	}
+	addMovimiento();
+	CompruebaRestantes();
+	CompruebaGanador();
+}
+
+function addFlag(div){
+	div.removeClass('tapa');
+	div.addClass('Flag');
+	//$('body').on('contextmenu', '.tablero', function(e){ return false; });
+	addMovimiento();
+	CompruebaRestantes();
+	CompruebaGanador();
+
+}
+
+function CompruebaGanador(){
+	if(Restantes == 0){
+		title = "\\:D/ HAS GANADO";
+		text = "Has resuelto el buscaminas AIO,  Quieres jugar de nuevo?";
+		showModal(title, text, 'LimpiaTodo();');
+	}
+}
+
+function CompruebaRestantes(){
+	cont = 0;
+	$('div.casilla').each(function(i){
+		if($(this).hasClass('tapa')){
+			cont = cont + 1;
+		}
+	});
+	cont - $('input#bus_minas').val();
+	Restantes = cont;
+	$('span.mins').text(Restantes);
+}
+
+function addMovimiento(){
+	Movimientos = Movimientos + 1;
+	$('span.mmovs').text(Movimientos);
+	
+}
+
+function LimpiaTodo(){
+	Movimientos = 0;
+	$('input#bus_alto').val("");
+	$('input#bus_ancho').val("");
+	$('input#bus_minas').val("");
+	$('div.tablero').empty();
+	$('span.mmovs').empty();
+	$('span.mins').empty();
+	$('input#bus_ancho').focus();
+}
+</script>
+	
+	
+	
+</body>
+</html>
